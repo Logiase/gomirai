@@ -98,6 +98,9 @@ func (bot *Bot) FetchMessage() error {
 		}
 
 		for _, e := range respS {
+			if len(bot.MessageChan) == bot.chanCache {
+				<-bot.MessageChan
+			}
 			bot.MessageChan <- e
 		}
 

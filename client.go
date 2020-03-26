@@ -59,7 +59,6 @@ func (client *Client) Verify(qq int64) (*Bot, error) {
 
 // GetSession 获取一个Session
 func (client *Client) GetSession() (session string, err error) {
-	fmt.Println("GetSession")
 	postBody := make(map[string]interface{}, 1)
 	postBody["authKey"] = client.authKey
 	var respS AuthResponse
@@ -85,7 +84,13 @@ func (client *Client) ReleaseAllSession() {
 // 用于内部的Post请求
 func (client *Client) httpPost(path string, postBody interface{}, respS interface{}) error {
 	bytesData, _ := json.Marshal(postBody)
-	resp, err := client.HTTPClient.Post(client.Address+path, "application/json", bytes.NewReader(bytesData))
+	req, err := http.NewRequest("POST", client.Address+path, bytes.NewReader(bytesData))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Connection", "Keep-Alive")
+	resp, err := client.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -98,6 +103,11 @@ func (client *Client) httpPost(path string, postBody interface{}, respS interfac
 
 // 用于内部的Get请求
 func (client *Client) httpGet(path string, respS interface{}) error {
+	req, err := http.NewRequest("GET", client.Address+path, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Connection", "Keep-Alive")
 	resp, err := client.HTTPClient.Get(client.Address + path)
 	if err != nil {
 		return err
