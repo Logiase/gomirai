@@ -30,4 +30,4 @@ b. 提升FetchMessage的时间间隔
 
 ## 许可证
 
-[GPL-3.0](LICENSE) © Logiase
+[AGPL-3.0](LICENSE) © Logiase
