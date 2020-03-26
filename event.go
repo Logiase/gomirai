@@ -2,6 +2,7 @@ package gomirai
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 )
 
@@ -22,8 +23,11 @@ type InEvent struct {
 	Member          GroupMember `json:"member,omitempty"`
 
 	//Message
-	MessageChain []Message   `json:"message_chain,omitempty"`
+	MessageChain []Message `json:"messageChain,omitempty"`
+
 	Sender       interface{} `json:"sender,omitempty"`
+	SenderGroup  GroupMember `json:"-"`
+	SenderFriend Friend      `json:"-"`
 
 	Operator       interface{} `json:"operator,omitempty"` // Operator 可能是GroupMember或int64
 	OperatorGroup  GroupMember `json:"-"`
@@ -31,12 +35,50 @@ type InEvent struct {
 }
 
 // OperatorDetail 获取Operator的详细信息
-func (e *InEvent) OperatorDetail() {
+func (e *InEvent) OperatorDetail() error {
 	// Operator 为GroupMember
 	if reflect.TypeOf(e.Operator) == reflect.TypeOf(make(map[string]interface{})) {
-		bytesData, _ := json.Marshal(e.Operator)
-		_ = json.Unmarshal(bytesData, &e.OperatorGroup)
+		bytesData, err := json.Marshal(e.Operator)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(bytesData, &e.OperatorGroup)
+		if err != nil {
+			return err
+		}
 	} else {
 		e.OperatorFriend = reflect.ValueOf(e.Operator).Int()
 	}
+	return nil
+}
+
+// SenderDetail 获取Sender的详细信息
+func (e *InEvent) SenderDetail() error {
+	if reflect.TypeOf(e.Sender).Kind() == reflect.Map {
+		keys := reflect.ValueOf(e.Sender).MapKeys()
+		for _, k := range keys {
+			if k.String() == "memberName" {
+				bytesData, err := json.Marshal(e.Sender)
+				if err != nil {
+					return err
+				}
+				err = json.Unmarshal(bytesData, &e.SenderGroup)
+				if err != nil {
+					return err
+				}
+				return nil
+			} else if k.String() == "nickName" {
+				bytesData, err := json.Marshal(e.Sender)
+				if err != nil {
+					return err
+				}
+				err = json.Unmarshal(bytesData, &e.SenderFriend)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+	return errors.New("sender 序列化失败")
 }

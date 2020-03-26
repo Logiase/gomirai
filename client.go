@@ -29,10 +29,10 @@ func NewMiraiClient(address, authKey string) (client *Client) {
 	return
 }
 
-// Verify 验证一个Session并绑定一个Bot
+// Verify 使用此方法校验并激活你的Session，同时将Session与一个已登录的Bot绑定
 func (client *Client) Verify(qq int64) (*Bot, error) {
 	fmt.Println("Verify")
-	session, err := client.GetSession()
+	session, err := client.Auth()
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (client *Client) Verify(qq int64) (*Bot, error) {
 	postBody["sessionKey"] = session
 	postBody["qq"] = qq
 
-	var respS VerifyResponse
+	var respS Response
 	err = client.httpPost("/verify", postBody, &respS)
 	if err != nil {
 		return nil, err
@@ -57,8 +57,8 @@ func (client *Client) Verify(qq int64) (*Bot, error) {
 	return client.Bots[qq], nil
 }
 
-// GetSession 获取一个Session
-func (client *Client) GetSession() (session string, err error) {
+// Auth 使用此方法验证你的身份，并返回一个Session
+func (client *Client) Auth() (session string, err error) {
 	postBody := make(map[string]interface{}, 1)
 	postBody["authKey"] = client.authKey
 	var respS AuthResponse

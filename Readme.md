@@ -16,6 +16,12 @@
 
 (安利狂魔) [Go急速入门](https://learn.go.dev/)
 
+### 目前问题
+
+1. Bot.FetchMessage()会收到重复消息 解决方法：
+a. 等待HTTP API作者修复
+b. 提升FetchMessage的时间间隔
+
 ## 功能
 
 ## 维护者
