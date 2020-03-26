@@ -30,7 +30,7 @@ func NewMiraiClient(address, authKey string) (client *Client) {
 }
 
 // Verify 验证一个Session并绑定一个Bot
-func (client Client) Verify(qq int64) (*Bot, error) {
+func (client *Client) Verify(qq int64) (*Bot, error) {
 	fmt.Println("Verify")
 	session, err := client.GetSession()
 	if err != nil {
@@ -50,7 +50,7 @@ func (client Client) Verify(qq int64) (*Bot, error) {
 	}
 
 	client.Bots[qq] = &Bot{
-		Client:  &client,
+		Client:  client,
 		QQ:      qq,
 		Session: session,
 	}
@@ -58,7 +58,7 @@ func (client Client) Verify(qq int64) (*Bot, error) {
 }
 
 // GetSession 获取一个Session
-func (client Client) GetSession() (session string, err error) {
+func (client *Client) GetSession() (session string, err error) {
 	fmt.Println("GetSession")
 	postBody := make(map[string]interface{}, 1)
 	postBody["authKey"] = client.authKey
@@ -76,13 +76,14 @@ func (client Client) GetSession() (session string, err error) {
 }
 
 // ReleaseAllSession 释放所有会话
-func (client Client) ReleaseAllSession() {
+func (client *Client) ReleaseAllSession() {
 	for _, bot := range client.Bots {
 		_ = bot.Release()
 	}
 }
 
-func (client Client) httpPost(path string, postBody interface{}, respS interface{}) error {
+// 用于内部的Post请求
+func (client *Client) httpPost(path string, postBody interface{}, respS interface{}) error {
 	bytesData, _ := json.Marshal(postBody)
 	resp, err := client.HTTPClient.Post(client.Address+path, "application/json", bytes.NewReader(bytesData))
 	if err != nil {
@@ -92,11 +93,18 @@ func (client Client) httpPost(path string, postBody interface{}, respS interface
 	defer resp.Body.Close()
 	bytesData, err = ioutil.ReadAll(resp.Body)
 
-	err = json.Unmarshal(bytesData, respS)
+	return json.Unmarshal(bytesData, respS)
+}
+
+// 用于内部的Get请求
+func (client *Client) httpGet(path string, respS interface{}) error {
+	resp, err := client.HTTPClient.Get(client.Address + path)
 	if err != nil {
-		fmt.Println(string(bytesData))
-		fmt.Println(err)
 		return err
 	}
-	return nil
+	defer resp.Body.Close()
+
+	bytesData, err := ioutil.ReadAll(resp.Body)
+
+	return json.Unmarshal(bytesData, respS)
 }
