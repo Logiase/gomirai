@@ -24,4 +24,4 @@
 
 ## 许可证
 
-[GPL-3.0](LICENSE) © Logiase
+[AGPL-3.0](LICENSE) © Logiase
