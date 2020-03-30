@@ -32,15 +32,17 @@ func main() {
 
 ### 目前问题
 
-1. Bot.FetchMessage()会收到重复消息 解决方法：
-a. 等待HTTP API作者修复
-b. 提升FetchMessage的时间间隔
+暂无
 
 ## 功能
 
 HTTP Api的所有基础功能
 
 Websocket支持目前还在计划中
+
+### 仍需改进的部分
+
+1. InEvent的更详细分类及自动归类，现在仍需手动调用OperatorDetail()与SenderDetail()
 
 ## 维护者
 
