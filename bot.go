@@ -173,6 +173,8 @@ func (bot *Bot) MessageFromID(id int64) (*InEvent, error) {
 }
 
 // FriendList 获取Bot的好友列表
+// 会获取本地缓存的好友列表，如需刷新请使用RefreshFriendList
+// 没有缓存时会自动刷新
 func (bot *Bot) FriendList() ([]*Friend, error) {
 	if bot.flagFriend {
 		return bot.friendList, nil
@@ -192,6 +194,8 @@ func (bot *Bot) RefreshFriendList() ([]*Friend, error) {
 }
 
 // GroupList 获取Bot的群列表
+// 会获取本地缓存的群列表，如需刷新请使用RefreshGroupList
+// 没有缓存时会自动刷新
 func (bot *Bot) GroupList() ([]*Group, error) {
 	if bot.flagGroup {
 		return bot.groupList, nil
