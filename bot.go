@@ -18,6 +18,12 @@ type Bot struct {
 	fetchTime   time.Duration
 
 	Session string
+
+	flagFriend bool
+	friendList []*Friend
+
+	flagGroup bool
+	groupList []*Group
 }
 
 // Release 使用此方式释放session及其相关资源（Bot不会被释放）
@@ -107,6 +113,23 @@ func (bot *Bot) SendImageMessage(target int64, targetType string, urls []string)
 	return respS, nil
 }
 
+// Recall 撤回一条消息
+func (bot *Bot) Recall(target int64) error {
+	postBody := make(map[string]interface{}, 2)
+	postBody["sessionKey"] = bot.Session
+	postBody["target"] = target
+
+	var respS Response
+	err := bot.Client.httpPost("/recall", postBody, &respS)
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+	return nil
+}
+
 // InitChannel 初始化消息管道
 // size 缓存数量 t 每次Fetch的时间间隔
 func (bot *Bot) InitChannel(size int, t time.Duration) {
@@ -136,4 +159,196 @@ func (bot *Bot) FetchMessage() error {
 
 		<-t.C
 	}
+}
+
+// MessageFromID 通过ID获取一条缓存的消息
+func (bot *Bot) MessageFromID(id int64) (*InEvent, error) {
+	var respS InEvent
+	err := bot.Client.httpGet("/messageFromId?sessionKey="+bot.Session+"&id="+strconv.FormatInt(id, 10), &respS)
+	if err != nil {
+		return nil, err
+	}
+	return &respS, nil
+}
+
+// FriendList 获取Bot的好友列表
+func (bot *Bot) FriendList() ([]*Friend, error) {
+	if bot.flagFriend {
+		return bot.friendList, nil
+	}
+	return bot.RefreshFriendList()
+}
+
+// RefreshFriendList 刷新好友列表
+func (bot *Bot) RefreshFriendList() ([]*Friend, error) {
+	var respS []*Friend
+	err := bot.Client.httpGet("/friendList?sessionKey="+bot.Session, &respS)
+	if err != nil {
+		return nil, err
+	}
+	bot.friendList = respS
+	return respS, nil
+}
+
+// GroupList 获取Bot的群列表
+func (bot *Bot) GroupList() ([]*Group, error) {
+	if bot.flagGroup {
+		return bot.groupList, nil
+	}
+	return bot.RefreshGroupList()
+}
+
+// RefreshGroupList 刷新群列表s
+func (bot *Bot) RefreshGroupList() ([]*Group, error) {
+	var respS []*Group
+	err := bot.Client.httpGet("/groupList?sessionKey="+bot.Session, &respS)
+	if err != nil {
+		return nil, err
+	}
+	bot.groupList = respS
+	return respS, nil
+}
+
+// MemberList 指定群内的群成员
+func (bot *Bot) MemberList(group int64) ([]*GroupMember, error) {
+	var respS []*GroupMember
+	err := bot.Client.httpGet("/memberList?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10), &respS)
+	if err != nil {
+		return nil, err
+	}
+	return respS, nil
+}
+
+// MuteAll 全体禁言
+func (bot *Bot) MuteAll(group int64) error {
+	postBody := make(map[string]interface{}, 2)
+	postBody["sessionKey"] = bot.Session
+	postBody["target"] = group
+
+	var respS Response
+	err := bot.Client.httpPost("/muteAll", postBody, &respS)
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+	return nil
+}
+
+// UnmuteAll 接触全体禁言
+func (bot *Bot) UnmuteAll(group int64) error {
+	postBody := make(map[string]interface{}, 2)
+	postBody["sessionKey"] = bot.Session
+	postBody["target"] = group
+
+	var respS Response
+	err := bot.Client.httpPost("/unmuteAll", postBody, &respS)
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+	return nil
+}
+
+// Mute 禁言 second为0 解除禁言
+func (bot *Bot) Mute(group int64, member int64, second int64) error {
+	postBody := make(map[string]interface{})
+	postBody["sessionKey"] = bot.Session
+	postBody["target"] = group
+	postBody["memberId"] = member
+
+	var respS Response
+	var err error
+
+	if second == 0 {
+		err = bot.Client.httpPost("/unmute", postBody, &respS)
+	} else {
+		postBody["time"] = second
+		err = bot.Client.httpPost("/mute", postBody, &respS)
+	}
+
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+
+	return nil
+}
+
+// Kick
+func (bot *Bot) Kick(group int64, member int64, msg string) error {
+	postBody := make(map[string]interface{}, 4)
+	postBody["sessionKey"] = bot.Session
+	postBody["target"] = group
+	postBody["memberId"] = member
+	postBody["msg"] = msg
+	var respS Response
+	err := bot.Client.httpPost("/mute", postBody, &respS)
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+	return nil
+}
+
+// SetGroupConfig
+func (bot *Bot) SetGroupConfig(config GroupConfig, group int64) error {
+	postBody := make(map[string]interface{}, 3)
+	postBody["sessionKey"] = bot.Session
+	postBody["target"] = group
+	postBody["config"] = config
+	var respS Response
+	err := bot.Client.httpPost("/groupConfig", postBody, &respS)
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+	return nil
+}
+
+// GetGroupConfig
+func (bot *Bot) GetGroupConfig(group int64) (*GroupConfig, error) {
+	var respS *GroupConfig
+	err := bot.Client.httpGet("/groupConfig?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10), &respS)
+	if err != nil {
+		return nil, err
+	}
+	return respS, nil
+}
+
+// SetGroupMemberInfo
+func (bot *Bot) SetGroupMemberInfo(info *GroupMemberInfo, group, member int64) error {
+	postBody := make(map[string]interface{}, 3)
+	postBody["sessionKey"] = bot.Session
+	postBody["target"] = group
+	postBody["memberId"] = member
+	postBody["info"] = info
+	var respS Response
+	err := bot.Client.httpPost("/memberInfo", postBody, &respS)
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+	return nil
+}
+
+// GetGroupMemberInfo
+func (bot *Bot) GetGroupMemberInfo(group, member int64) (*GroupMemberInfo, error) {
+	var respS *GroupMemberInfo
+	err := bot.Client.httpGet("/memberInfo?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10)+"&memberId="+strconv.FormatInt(member, 10), &respS)
+	if err != nil {
+		return nil, err
+	}
+	return respS, nil
 }

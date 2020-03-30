@@ -21,3 +21,19 @@ type Friend struct {
 	NickName string `json:"nickName"`
 	Remark   string `json:"remark"`
 }
+
+// GroupConfig
+type GroupConfig struct {
+	Name              string `json:"name"`
+	Announcement      string `json:"announcement"`
+	ConfessTalk       bool   `json:"confessTalk"`
+	AllowMemberInvite bool   `json:"allowMemberInvite"`
+	AutoApprove       bool   `json:"autoApprove"`
+	AnonymousChat     bool   `json:"anonymousChat"`
+}
+
+// GroupMemberInfo
+type GroupMemberInfo struct {
+	Name         string `json:"name"`
+	SpecialTitle string `json:"specialTitle"`
+}
