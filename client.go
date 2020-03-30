@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Client 用于服务的Client
@@ -32,7 +33,6 @@ func NewMiraiClient(address, authKey string) (client *Client) {
 
 // Verify 使用此方法校验并激活你的Session，同时将Session与一个已登录的Bot绑定
 func (client *Client) Verify(qq int64) (*Bot, error) {
-	fmt.Println("Verify")
 	session, err := client.Auth()
 	if err != nil {
 		return nil, err
@@ -99,6 +99,7 @@ func (client *Client) httpPost(path string, postBody interface{}, respS interfac
 	defer resp.Body.Close()
 	bytesData, err = ioutil.ReadAll(resp.Body)
 
+	logrus.Debug(string(bytesData))
 	return json.Unmarshal(bytesData, respS)
 }
 
@@ -116,7 +117,7 @@ func (client *Client) httpGet(path string, respS interface{}) error {
 	defer resp.Body.Close()
 
 	bytesData, err := ioutil.ReadAll(resp.Body)
-
+	logrus.Debug(string(bytesData))
 	return json.Unmarshal(bytesData, respS)
 }
 

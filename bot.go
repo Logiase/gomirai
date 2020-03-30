@@ -36,7 +36,7 @@ func (bot *Bot) Release() error {
 
 	postBody := make(map[string]interface{}, 2)
 	postBody["qq"] = bot.QQ
-	postBody["session"] = bot.Session
+	postBody["sessionKey"] = bot.Session
 
 	var respS Response
 	err := bot.Client.httpPost("/release", postBody, &respS)
