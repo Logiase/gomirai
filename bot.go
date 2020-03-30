@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Bot qq机器人
 type Bot struct {
 	Client *Client
 
@@ -48,7 +49,7 @@ func (bot *Bot) Release() error {
 	return nil
 }
 
-// SendFriendQuoteMessage 使用此方法向指定好友发送消息
+// SendFriendMessage 使用此方法向指定好友发送消息
 // 如果不需要引用回复，quote设0
 func (bot *Bot) SendFriendMessage(target, quote int64, msg []Message) (int64, error) {
 	postBody := make(map[string]interface{})
@@ -280,7 +281,7 @@ func (bot *Bot) Mute(group int64, member int64, second int64) error {
 	return nil
 }
 
-// Kick
+// Kick 踢出群聊
 func (bot *Bot) Kick(group int64, member int64, msg string) error {
 	postBody := make(map[string]interface{}, 4)
 	postBody["sessionKey"] = bot.Session
@@ -298,7 +299,7 @@ func (bot *Bot) Kick(group int64, member int64, msg string) error {
 	return nil
 }
 
-// SetGroupConfig
+// SetGroupConfig 设置群设置
 func (bot *Bot) SetGroupConfig(config GroupConfig, group int64) error {
 	postBody := make(map[string]interface{}, 3)
 	postBody["sessionKey"] = bot.Session
@@ -315,7 +316,7 @@ func (bot *Bot) SetGroupConfig(config GroupConfig, group int64) error {
 	return nil
 }
 
-// GetGroupConfig
+// GetGroupConfig 获取群设置
 func (bot *Bot) GetGroupConfig(group int64) (*GroupConfig, error) {
 	var respS *GroupConfig
 	err := bot.Client.httpGet("/groupConfig?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10), &respS)
@@ -325,7 +326,7 @@ func (bot *Bot) GetGroupConfig(group int64) (*GroupConfig, error) {
 	return respS, nil
 }
 
-// SetGroupMemberInfo
+// SetGroupMemberInfo 设置群成员信息
 func (bot *Bot) SetGroupMemberInfo(info *GroupMemberInfo, group, member int64) error {
 	postBody := make(map[string]interface{}, 3)
 	postBody["sessionKey"] = bot.Session
@@ -343,7 +344,7 @@ func (bot *Bot) SetGroupMemberInfo(info *GroupMemberInfo, group, member int64) e
 	return nil
 }
 
-// GetGroupMemberInfo
+// GetGroupMemberInfo 获取群成员信息
 func (bot *Bot) GetGroupMemberInfo(group, member int64) (*GroupMemberInfo, error) {
 	var respS *GroupMemberInfo
 	err := bot.Client.httpGet("/memberInfo?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10)+"&memberId="+strconv.FormatInt(member, 10), &respS)

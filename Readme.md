@@ -12,6 +12,20 @@
 
 所有导出函数、变量、结构均有详细注释
 
+```go
+
+package main
+
+import (
+    "github.com/Logiase/gomirai"
+)
+
+func main() {
+    //...
+}
+    
+```
+
 ### 不了解Go？
 
 (安利狂魔) [Go急速入门](https://learn.go.dev/)
@@ -23,6 +37,10 @@ a. 等待HTTP API作者修复
 b. 提升FetchMessage的时间间隔
 
 ## 功能
+
+HTTP Api的所有基础功能
+
+Websocket支持目前还在计划中
 
 ## 维护者
 

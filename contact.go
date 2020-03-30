@@ -22,7 +22,7 @@ type Friend struct {
 	Remark   string `json:"remark"`
 }
 
-// GroupConfig
+// GroupConfig 群设置
 type GroupConfig struct {
 	Name              string `json:"name"`
 	Announcement      string `json:"announcement"`
@@ -32,7 +32,7 @@ type GroupConfig struct {
 	AnonymousChat     bool   `json:"anonymousChat"`
 }
 
-// GroupMemberInfo
+// GroupMemberInfo 群成员信息
 type GroupMemberInfo struct {
 	Name         string `json:"name"`
 	SpecialTitle string `json:"specialTitle"`

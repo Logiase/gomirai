@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 // Client 用于服务的Client
@@ -117,4 +118,57 @@ func (client *Client) httpGet(path string, respS interface{}) error {
 	bytesData, err := ioutil.ReadAll(resp.Body)
 
 	return json.Unmarshal(bytesData, respS)
+}
+
+// GetSessionConfig 获取Session的设置
+func (client *Client) GetSessionConfig(session string) (*SessionConfig, error) {
+	var respS SessionConfig
+	err := client.httpGet("/config?sessionKey="+session, &respS)
+	if err != nil {
+		return nil, err
+	}
+	respS.SessionKey = session
+	return &respS, nil
+}
+
+// SetSessionConfig 设置Session
+func (client *Client) SetSessionConfig(config *SessionConfig) error {
+	var respS Response
+	err := client.httpPost("/config", config, &respS)
+	if err != nil {
+		return err
+	}
+	if respS.Code != 0 {
+		return errors.New(respS.Msg)
+	}
+	return nil
+}
+
+// SendCommand 发送指令
+func (client *Client) SendCommand(commandName string, args []string) string {
+	postBody := make(map[string]interface{}, 3)
+	postBody["authKey"] = client.authKey
+	postBody["name"] = commandName
+	postBody["args"] = args
+	bytesData, _ := json.Marshal(postBody)
+	resp, err := client.HTTPClient.Post("/command/send", "application/json", bytes.NewReader(bytesData))
+	if err != nil {
+		return err.Error()
+	}
+	defer resp.Body.Close()
+	bytesData, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err.Error()
+	}
+	return string(bytesData)
+}
+
+// GetManagers 获取指定bot的Managers
+func (client *Client) GetManagers(qq int64) (*[]int64, error) {
+	var respS []int64
+	err := client.httpGet("/managers?qq="+strconv.FormatInt(qq, 10), &respS)
+	if err != nil {
+		return nil, err
+	}
+	return &respS, nil
 }
