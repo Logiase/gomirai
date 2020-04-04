@@ -1,5 +1,8 @@
 package gomirai
 
+
+// <-- Response -->
+
 // Response 通用响应
 type Response struct {
 	Code int    `json:"code"`
