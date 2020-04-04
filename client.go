@@ -146,7 +146,7 @@ func (client *Client) SetSessionConfig(config *SessionConfig) error {
 }
 
 // SendCommand 发送指令
-func (client *Client) SendCommand(commandName string, args []string) string {
+func (client *Client) SendCommand(commandName string, args ...string) string {
 	postBody := make(map[string]interface{}, 3)
 	postBody["authKey"] = client.authKey
 	postBody["name"] = commandName

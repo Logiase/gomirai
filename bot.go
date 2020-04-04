@@ -51,7 +51,7 @@ func (bot *Bot) Release() error {
 
 // SendFriendMessage 使用此方法向指定好友发送消息
 // 如果不需要引用回复，quote设0
-func (bot *Bot) SendFriendMessage(target, quote int64, msg []Message) (int64, error) {
+func (bot *Bot) SendFriendMessage(target, quote int64, msg ...Message) (int64, error) {
 	postBody := make(map[string]interface{})
 	postBody["sessionKey"] = bot.Session
 	postBody["target"] = target
@@ -72,7 +72,7 @@ func (bot *Bot) SendFriendMessage(target, quote int64, msg []Message) (int64, er
 }
 
 // SendGroupMessage 使用此方法向指定群发送消息
-func (bot *Bot) SendGroupMessage(target, quote int64, msg []Message) (int64, error) {
+func (bot *Bot) SendGroupMessage(target, quote int64, msg ...Message) (int64, error) {
 	postBody := make(map[string]interface{})
 	postBody["sessionKey"] = bot.Session
 	postBody["target"] = target
@@ -93,7 +93,7 @@ func (bot *Bot) SendGroupMessage(target, quote int64, msg []Message) (int64, err
 }
 
 // SendImageMessage 使用此方法向指定对象（群或好友）发送图片消息 除非需要通过此手段获取imageId，否则不推荐使用该接口
-func (bot *Bot) SendImageMessage(target int64, targetType string, urls []string) ([]string, error) {
+func (bot *Bot) SendImageMessage(target int64, targetType string, urls ...string) ([]string, error) {
 	postBody := make(map[string]interface{})
 	postBody["sessionKey"] = bot.Session
 	switch strings.ToLower(targetType) {
