@@ -4,7 +4,7 @@
 
 适配[MiraiHttpApi](https://github.com/mamoe/mirai-api-http)与[Mirai](https://github.com/mamoe/mirai)的Go SDK
 
-目前仍处于开发阶段,部分功能仍未测试，暂未发布Go Module
+目前仍处于开发阶段
 
 ## 如何使用
 
@@ -42,11 +42,13 @@ Websocket支持目前还在计划中
 
 ### 仍需改进的部分
 
-1. InEvent的更详细分类及自动归类，现在仍需手动调用OperatorDetail()与SenderDetail()
+
 
 ## 维护者
 
 [Logiase](https://github.com/Logiase)
+
+[capric98](https://github.com/capric98)
 
 ## 许可证
 
