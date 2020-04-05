@@ -32,12 +32,12 @@ type Friend struct {
 
 // GroupConfig 群设置
 type GroupConfig struct {
-	Name              string `json:"name"`
-	Announcement      string `json:"announcement"`
-	ConfessTalk       bool   `json:"confessTalk"`
-	AllowMemberInvite bool   `json:"allowMemberInvite"`
-	AutoApprove       bool   `json:"autoApprove"`
-	AnonymousChat     bool   `json:"anonymousChat"`
+	Name              string `json:"name,omitempty"`
+	Announcement      string `json:"announcement,omitempty"`
+	ConfessTalk       bool   `json:"confessTalk,omitempty"`
+	AllowMemberInvite bool   `json:"allowMemberInvite,omitempty"`
+	AutoApprove       bool   `json:"autoApprove,omitempty"`
+	AnonymousChat     bool   `json:"anonymousChat,omitempty"`
 }
 
 // GroupMemberInfo 群成员信息
@@ -131,11 +131,26 @@ func (m *GroupMemberWrapper) UnmarshalJSON(data []byte) error {
 // CommonCall 通用请求
 type CommonCall struct {
 	SessionKey string `json:"sessionKey"`
+	Target     int64  `json:"target,omitempty"`
 }
 
 // MessageCall 消息用
 type MessageCall struct {
 	CommonCall
-	Target       int64     `json:"target"`
-	MessageChain []Message `json:"messageChain"`
+	QQ           int64     `json:"qq,omitempty"`
+	Group        int64     `json:"group,omitempty"`
+	MessageChain []Message `json:"messageChain,omitempty"`
+	Urls         []string  `json:"urls,omitempty"`
+}
+
+type ManageCall struct {
+	CommonCall
+	MemberID int64 `json:"memberId"`
+	Time     int   `json:"time,omitempty"`
+}
+
+type ConfigCall struct {
+	CommonCall
+	Config GroupConfig     `json:"config,omitempty"`
+	Info   GroupMemberInfo `json:"info,omitempty"`
 }
