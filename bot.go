@@ -25,9 +25,9 @@ type Bot struct {
 	currentSize int
 	fetchTime   time.Duration
 
-	msgChan    chan api.Event
-	friendList []*api.Friend
-	groupList  []*api.Group
+	MsgChan    chan api.Event
+	friendList []api.Friend
+	groupList  []api.Group
 
 	client http.Client
 }
@@ -35,10 +35,7 @@ type Bot struct {
 // NewBot :)
 func NewBot(addr string) *Bot {
 	return &Bot{
-		addr:       addr,
-		msgChan:    make(chan api.Event),
-		friendList: make([]*api.Friend, 0),
-		groupList:  make([]*api.Group, 0),
+		addr: addr,
 	}
 }
 
@@ -95,7 +92,13 @@ func (b *Bot) SendFriendMessage(msg api.MessageCall) (resp *api.Response, e erro
 
 // SendGroupMessage :)
 func (b *Bot) SendGroupMessage(msg api.MessageCall) (resp *api.Response, e error) {
-	return b.SendFriendMessage(msg)
+	resp = &api.Response{}
+	buf := bytes.NewBuffer([]byte{})
+	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
+		return
+	}
+	e = b.call("POST", "/sendGroupMessage", nil, buf, &resp)
+	return
 }
 
 // SendImageMessage :)
@@ -142,22 +145,46 @@ func (b *Bot) MessageFromID(id int64) (resp api.Event, e error) {
 	return
 }
 
-// FriendList :)
-func (b *Bot) FriendList() (list []api.Friend, e error) {
+// RefreshFriendList :)
+func (b *Bot) RefreshFriendList() (list []api.Friend, e error) {
 	list = make([]api.Friend, 0)
 	e = b.call("GET", "/friendList", url.Values{
 		"sessionKey": []string{b.session},
 	}, nil, &list)
+
+	b.friendList = list
+	b.flagFriend = true
+
 	return
 }
 
-// GroupList :)
-func (b *Bot) GroupList() (list []api.Group, e error) {
+// FriendList 获取缓存的好友列表
+func (b *Bot) FriendList() (list []api.Friend, e error) {
+	if !b.flagFriend {
+		return b.RefreshFriendList()
+	}
+	return b.friendList, nil
+}
+
+// RefreshGroupList :)
+func (b *Bot) RefreshGroupList() (list []api.Group, e error) {
 	list = make([]api.Group, 0)
 	e = b.call("GET", "/groupList", url.Values{
 		"sessionKey": []string{b.session},
 	}, nil, &list)
+
+	b.groupList = list
+	b.flagGroup = true
+
 	return
+}
+
+// GroupList 获取缓存的群列表
+func (b *Bot) GroupList() (list []api.Group, e error) {
+	if !b.flagGroup {
+		return b.RefreshGroupList()
+	}
+	return b.groupList, nil
 }
 
 // MemberList :)

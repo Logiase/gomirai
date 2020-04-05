@@ -8,6 +8,7 @@ import (
 )
 
 // <-- Contact -->
+
 // Group 群
 type Group struct {
 	ID         int64  `json:"id"`
@@ -47,6 +48,7 @@ type GroupMemberInfo struct {
 }
 
 // <-- Message -->
+
 // Message 消息
 type Message struct {
 	Type string `json:"type"`
@@ -70,6 +72,7 @@ type Message struct {
 }
 
 // <-- Response -->
+
 // Response 通用响应
 type Response struct {
 	Code int    `json:"code"`
@@ -92,6 +95,8 @@ type SessionConfig struct {
 }
 
 // <-- Event -->
+
+// Event 事件
 type Event struct {
 	Type string `json:"type"`
 	QQ   int64  `json:"qq,omitempty"`
@@ -113,10 +118,12 @@ type Event struct {
 	Operator        GroupMemberWrapper `json:"operator,omitempty"` // Operator 可能是GroupMember或int64
 }
 
+// GroupMemberWrapper GroupMember
 type GroupMemberWrapper struct {
 	GroupMember
 }
 
+// UnmarshalJSON 动态解析Json
 // https://medium.com/@nate510/dynamic-json-umarshalling-in-go-88095561d6a0
 // In order to correctly unmarshal either an ID or an object, we can now override the default behavior:
 func (m *GroupMemberWrapper) UnmarshalJSON(data []byte) error {
@@ -128,6 +135,7 @@ func (m *GroupMemberWrapper) UnmarshalJSON(data []byte) error {
 }
 
 // <-- Call -->
+
 // CommonCall 通用请求
 type CommonCall struct {
 	SessionKey string `json:"sessionKey"`
@@ -143,12 +151,14 @@ type MessageCall struct {
 	Urls         []string  `json:"urls,omitempty"`
 }
 
+// ManageCall 群员管理 禁言及踢出群聊
 type ManageCall struct {
 	CommonCall
 	MemberID int64 `json:"memberId"`
 	Time     int   `json:"time,omitempty"`
 }
 
+// ConfigCall 包含群设置及群员设置
 type ConfigCall struct {
 	CommonCall
 	Config GroupConfig     `json:"config,omitempty"`
