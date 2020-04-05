@@ -1,0 +1,53 @@
+[]api.Event{
+    api.Event{
+        Type:"MemberMuteEvent",
+        QQ:0,
+        MessageChain:[]api.Message(nil),
+        Sender:api.GroupMember{
+            ID:0,
+            MemberName:"",
+            Permission:"",
+            Group:api.Group{
+                ID:0,
+                Name:"",
+                Permission:""
+            }
+        },
+        IsByBot:false,
+        AuthorID:0,
+        MessageID:0,
+        Time:0,
+        Group:api.Group{
+            ID:0,
+            Name:"",
+            Permission:""
+        },
+        Origin:interface {}(nil),
+        Current:interface {}(nil),
+        DurationSeconds:600,
+        Member:api.GroupMemberWrapper{
+            GroupMember:api.GroupMember{
+                ID:123456789,
+                MemberName:"禁言对象",
+                Permission:"MEMBER",
+                Group:api.Group{
+                    ID:123456789,
+                    Name:"Miral Technology",
+                    Permission:"MEMBER"
+                }
+            }
+        },
+        Operator:api.GroupMemberWrapper{
+            GroupMember:api.GroupMember{
+                ID:987654321,
+                MemberName:"",
+                Permission:"",
+                Group:api.Group{
+                    ID:0,
+                    Name:"",
+                    Permission:""
+                }
+            }
+        }
+    }
+}

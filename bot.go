@@ -1,359 +1,315 @@
 package gomirai
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Logiase/gomirai/api"
 )
 
 // Bot qq机器人
 type Bot struct {
-	Client *Client
+	addr, authKey, session string
+	qq                     int64
 
-	QQ int64
-
-	MessageChan chan InEvent
+	flagFriend  bool
+	flagGroup   bool
 	chanCache   int
 	currentSize int
 	fetchTime   time.Duration
 
-	Session string
+	msgChan    chan api.Event
+	friendList []*api.Friend
+	groupList  []*api.Group
 
-	flagFriend bool
-	friendList []*Friend
-
-	flagGroup bool
-	groupList []*Group
+	client http.Client
 }
 
-// Release 使用此方式释放session及其相关资源（Bot不会被释放）
-// 不使用的Session应当被释放，长时间（30分钟）未使用的Session将自动释放，否则Session持续保存Bot收到的消息，将会导致内存泄露
-func (bot *Bot) Release() error {
-	if bot.Session == "" {
-		return errors.New("bot未实例化")
+// NewBot :)
+func NewBot(addr string) *Bot {
+	return &Bot{
+		addr:       addr,
+		msgChan:    make(chan api.Event),
+		friendList: make([]*api.Friend, 0),
+		groupList:  make([]*api.Group, 0),
 	}
-
-	postBody := make(map[string]interface{}, 2)
-	postBody["qq"] = bot.QQ
-	postBody["sessionKey"] = bot.Session
-
-	var respS Response
-	err := bot.Client.httpPost("/release", postBody, &respS)
-	if err != nil {
-		return err
-	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
-	}
-	return nil
 }
 
-// SendFriendMessage 使用此方法向指定好友发送消息
-// 如果不需要引用回复，quote设0
-func (bot *Bot) SendFriendMessage(target, quote int64, msg []Message) (int64, error) {
-	postBody := make(map[string]interface{})
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = target
-	if quote != 0 {
-		postBody["quote"] = quote
-	}
-	postBody["messageChain"] = msg
-
-	var respS Response
-	err := bot.Client.httpPost("/sendFriendMessage", postBody, &respS)
-	if err != nil {
-		return 0, err
-	}
-	if respS.Code != 0 {
-		return 0, errors.New(respS.Msg)
-	}
-	return respS.MessageID, nil
+// NewBotWithClient :)
+func NewBotWithClient(addr string, c http.Client) *Bot {
+	b := NewBot(addr)
+	b.client = c
+	return b
 }
 
-// SendGroupMessage 使用此方法向指定群发送消息
-func (bot *Bot) SendGroupMessage(target, quote int64, msg []Message) (int64, error) {
-	postBody := make(map[string]interface{})
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = target
-	if quote != 0 {
-		postBody["quote"] = quote
-	}
-	postBody["messageChain"] = msg
-
-	var respS Response
-	err := bot.Client.httpPost("/sendGroupMessage", postBody, &respS)
-	if err != nil {
-		return 0, err
-	}
-	if respS.Code != 0 {
-		return 0, errors.New(respS.Msg)
-	}
-	return respS.MessageID, nil
-}
-
-// SendImageMessage 使用此方法向指定对象（群或好友）发送图片消息 除非需要通过此手段获取imageId，否则不推荐使用该接口
-func (bot *Bot) SendImageMessage(target int64, targetType string, urls []string) ([]string, error) {
-	postBody := make(map[string]interface{})
-	postBody["sessionKey"] = bot.Session
-	switch strings.ToLower(targetType) {
-	case "group":
-		postBody["group"] = target
-	case "qq":
-		postBody["qq"] = target
-	default:
-		return nil, errors.New("target Type错误 应为 qq 或 group")
-	}
-	postBody["urls"] = urls
-
-	var respS []string
-	err := bot.Client.httpPost("/sendGroupMessage", postBody, &respS)
-	if err != nil {
-		return nil, err
-	}
-	return respS, nil
-}
-
-// Recall 撤回一条消息
-func (bot *Bot) Recall(target int64) error {
-	postBody := make(map[string]interface{}, 2)
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = target
-
-	var respS Response
-	err := bot.Client.httpPost("/recall", postBody, &respS)
-	if err != nil {
-		return err
-	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
-	}
-	return nil
-}
-
-// InitChannel 初始化消息管道
-// size 缓存数量 t 每次Fetch的时间间隔
-func (bot *Bot) InitChannel(size int, t time.Duration) {
-	bot.MessageChan = make(chan InEvent, size)
-	bot.chanCache = size
-	bot.currentSize = 0
-	bot.fetchTime = t
-}
-
-// FetchMessage 获取消息，会阻塞当前线程，消息保存在bot中的MessageChan
-// 使用前请使用InitChannel初始化Channel
-func (bot *Bot) FetchMessage() error {
-	var respS []InEvent
-	t := time.NewTicker(bot.fetchTime)
-	for {
-		err := bot.Client.httpGet("/fetchMessage?sessionKey="+bot.Session+"&count="+strconv.Itoa(bot.chanCache), &respS)
-		if err != nil {
-			return err
+// Auth :)
+func (b *Bot) Auth(authKey string) (f bool, e error) {
+	defer func() {
+		if p := recover(); p != nil {
+			e = p.(error)
 		}
+	}()
+	var i = make(map[string]interface{})
+	payload := `{"authKey": "` + authKey + `"}`
+	e = b.call("POST", "/auth", nil, bytes.NewReader([]byte(payload)), &i)
+	if e != nil {
+		return false, e
+	}
 
-		for _, e := range respS {
-			if len(bot.MessageChan) == bot.chanCache {
-				<-bot.MessageChan
-			}
-			bot.MessageChan <- e
+	f = i["code"].(int) == 0
+	b.session = i["session"].(string)
+	return
+}
+
+// Verify :)
+func (b *Bot) Verify(qq int64) (f bool, e error) {
+	i := make(map[string]interface{})
+	payload := `{"sessionKey": "` + b.session + `", "qq": ` + strconv.FormatInt(qq, 10) + `}`
+	e = b.call("POST", "/verify", nil, bytes.NewReader([]byte(payload)), &i)
+	if e != nil {
+		return
+	}
+	if f, e = checkUniformCodeResp(i); f {
+		b.qq = qq
+	}
+	return
+}
+
+// SendFriendMessage :)
+func (b *Bot) SendFriendMessage(msg api.MessageCall) (resp *api.Response, e error) {
+	resp = &api.Response{}
+	buf := bytes.NewBuffer([]byte{})
+	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
+		return
+	}
+	e = b.call("POST", "/sendFriendMessage", nil, buf, &resp)
+	return
+}
+
+// SendGroupMessage :)
+func (b *Bot) SendGroupMessage(msg api.MessageCall) (resp *api.Response, e error) {
+	return b.SendFriendMessage(msg)
+}
+
+// SendImageMessage :)
+func (b *Bot) SendImageMessage(msg api.MessageCall) (resp []string, e error) {
+	resp = make([]string, 0)
+	buf := bytes.NewBuffer([]byte{})
+	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
+		return
+	}
+	e = b.call("POST", "/sendImageMessage", nil, buf, &resp)
+	return
+}
+
+// TODO: multipart/form-data
+// func (b *Bot) UploadImage() {}
+
+// Recall :)
+func (b *Bot) Recall(msg api.MessageCall) (f bool, e error) {
+	buf := bytes.NewBuffer([]byte{})
+	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
+		return
+	}
+	resp := make(map[string]interface{})
+	e = b.call("POST", "/recall", nil, buf, &resp)
+	return checkUniformCodeResp(resp)
+}
+
+// FetchMessage :)
+func (b *Bot) FetchMessage(count int) (resp []api.Event, e error) {
+	resp = make([]api.Event, 0, count)
+	e = b.call("GET", "/fetchMessage", url.Values{
+		"sessionKey": []string{b.session},
+		"count":      []string{strconv.Itoa(count)},
+	}, nil, &resp)
+	return
+}
+
+// MessageFromID :)
+func (b *Bot) MessageFromID(id int64) (resp api.Event, e error) {
+	e = b.call("GET", "/messageFromId", url.Values{
+		"sessionKey": []string{b.session},
+		"id":         []string{strconv.FormatInt(id, 10)},
+	}, nil, &resp)
+	return
+}
+
+// FriendList :)
+func (b *Bot) FriendList() (list []api.Friend, e error) {
+	list = make([]api.Friend, 0)
+	e = b.call("GET", "/friendList", url.Values{
+		"sessionKey": []string{b.session},
+	}, nil, &list)
+	return
+}
+
+// GroupList :)
+func (b *Bot) GroupList() (list []api.Group, e error) {
+	list = make([]api.Group, 0)
+	e = b.call("GET", "/groupList", url.Values{
+		"sessionKey": []string{b.session},
+	}, nil, &list)
+	return
+}
+
+// MemberList :)
+func (b *Bot) MemberList(target int64) (list []api.GroupMember, e error) {
+	list = make([]api.GroupMember, 0)
+	e = b.call("GET", "/memberList", url.Values{
+		"sessionKey": []string{b.session},
+		"target":     []string{strconv.FormatInt(target, 10)},
+	}, nil, &list)
+	return
+}
+
+// MuteAll :)
+func (b *Bot) MuteAll(target int64) (f bool, e error) {
+	sb := strings.Builder{}
+	_, _ = sb.WriteString(`{"sessionKey": "`)
+	_, _ = sb.WriteString(b.session)
+	_, _ = sb.WriteString(`", "target": `)
+	_, _ = sb.WriteString(strconv.FormatInt(target, 10))
+	_, _ = sb.WriteString(`}`)
+
+	resp := make(map[string]interface{})
+	e = b.call("POST", "/muteAll", nil, bytes.NewReader([]byte(sb.String())), &resp)
+	return checkUniformCodeResp(resp)
+}
+
+// UnmuteAll :)
+func (b *Bot) UnmuteAll(target int64) (f bool, e error) {
+	sb := strings.Builder{}
+	_, _ = sb.WriteString(`{"sessionKey": "`)
+	_, _ = sb.WriteString(b.session)
+	_, _ = sb.WriteString(`", "target": `)
+	_, _ = sb.WriteString(strconv.FormatInt(target, 10))
+	_, _ = sb.WriteString(`}`)
+
+	resp := make(map[string]interface{})
+	e = b.call("POST", "/unmuteAll", nil, bytes.NewReader([]byte(sb.String())), &resp)
+	return checkUniformCodeResp(resp)
+}
+
+// Mute :)
+func (b *Bot) Mute(msg api.ManageCall) (bool, error) {
+	return b.manageCall("/mute", msg)
+}
+
+// Unmute :)
+func (b *Bot) Unmute(msg api.ManageCall) (bool, error) {
+	return b.manageCall("/unmute", msg)
+}
+
+// Kick :)
+func (b *Bot) Kick(msg api.ManageCall) (bool, error) {
+	return b.manageCall("/kick", msg)
+}
+
+func (b *Bot) manageCall(endpoint string, msg api.ManageCall) (f bool, e error) {
+	buf := bytes.NewBuffer([]byte{})
+	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
+		return
+	}
+	resp := make(map[string]interface{})
+	e = b.call("POST", endpoint, nil, buf, &resp)
+	return checkUniformCodeResp(resp)
+}
+
+// GroupConfig :)
+func (b *Bot) GroupConfig(msg api.ConfigCall) (f bool, e error) {
+	buf := bytes.NewBuffer([]byte{})
+	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
+		return
+	}
+	resp := make(map[string]interface{})
+	e = b.call("POST", "/groupConfig", nil, buf, &resp)
+	return checkUniformCodeResp(resp)
+}
+
+// GetGroupConfig :)
+func (b *Bot) GetGroupConfig(target int64) (resp api.GroupConfig, e error) {
+	e = b.call("GET", "/groupConfig", url.Values{
+		"sessionKey": []string{b.session},
+		"target":     []string{strconv.FormatInt(target, 10)},
+	}, nil, &resp)
+	return
+}
+
+// MemberInfo :)
+func (b *Bot) MemberInfo(msg api.ConfigCall) (f bool, e error) {
+	buf := bytes.NewBuffer([]byte{})
+	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
+		return
+	}
+	resp := make(map[string]interface{})
+	e = b.call("POST", "/memberInfo", nil, buf, &resp)
+	return checkUniformCodeResp(resp)
+}
+
+// GetMemberInfo :)
+func (b *Bot) GetMemberInfo(target int64) (resp api.GroupConfig, e error) {
+	e = b.call("GET", "/memberInfo", url.Values{
+		"sessionKey": []string{b.session},
+		"target":     []string{strconv.FormatInt(target, 10)},
+	}, nil, &resp)
+	return
+}
+
+// QQ :)
+func (b *Bot) QQ() int64 {
+	return b.qq
+}
+
+// Session :)
+func (b *Bot) Session() string {
+	return b.session
+}
+
+func checkUniformCodeResp(m map[string]interface{}) (f bool, e error) {
+	defer func() {
+		if p := recover(); p != nil {
+			e = p.(error)
 		}
-
-		<-t.C
+	}()
+	if f = m["code"].(int) == 0; !f {
+		e = errors.New("code: " + strconv.Itoa(m["code"].(int)) + "| Msg: " + m["msg"].(string))
 	}
+	return
 }
 
-// MessageFromID 通过ID获取一条缓存的消息
-func (bot *Bot) MessageFromID(id int64) (*InEvent, error) {
-	var respS InEvent
-	err := bot.Client.httpGet("/messageFromId?sessionKey="+bot.Session+"&id="+strconv.FormatInt(id, 10), &respS)
-	if err != nil {
-		return nil, err
-	}
-	return &respS, nil
-}
-
-// FriendList 获取Bot的好友列表
-// 会获取本地缓存的好友列表，如需刷新请使用RefreshFriendList
-// 没有缓存时会自动刷新
-func (bot *Bot) FriendList() ([]*Friend, error) {
-	if bot.flagFriend {
-		return bot.friendList, nil
-	}
-	return bot.RefreshFriendList()
-}
-
-// RefreshFriendList 刷新好友列表
-func (bot *Bot) RefreshFriendList() ([]*Friend, error) {
-	var respS []*Friend
-	err := bot.Client.httpGet("/friendList?sessionKey="+bot.Session, &respS)
-	if err != nil {
-		return nil, err
-	}
-	bot.friendList = respS
-	return respS, nil
-}
-
-// GroupList 获取Bot的群列表
-// 会获取本地缓存的群列表，如需刷新请使用RefreshGroupList
-// 没有缓存时会自动刷新
-func (bot *Bot) GroupList() ([]*Group, error) {
-	if bot.flagGroup {
-		return bot.groupList, nil
-	}
-	return bot.RefreshGroupList()
-}
-
-// RefreshGroupList 刷新群列表s
-func (bot *Bot) RefreshGroupList() ([]*Group, error) {
-	var respS []*Group
-	err := bot.Client.httpGet("/groupList?sessionKey="+bot.Session, &respS)
-	if err != nil {
-		return nil, err
-	}
-	bot.groupList = respS
-	return respS, nil
-}
-
-// MemberList 指定群内的群成员
-func (bot *Bot) MemberList(group int64) ([]*GroupMember, error) {
-	var respS []*GroupMember
-	err := bot.Client.httpGet("/memberList?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10), &respS)
-	if err != nil {
-		return nil, err
-	}
-	return respS, nil
-}
-
-// MuteAll 全体禁言
-func (bot *Bot) MuteAll(group int64) error {
-	postBody := make(map[string]interface{}, 2)
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = group
-
-	var respS Response
-	err := bot.Client.httpPost("/muteAll", postBody, &respS)
-	if err != nil {
-		return err
-	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
-	}
-	return nil
-}
-
-// UnmuteAll 接触全体禁言
-func (bot *Bot) UnmuteAll(group int64) error {
-	postBody := make(map[string]interface{}, 2)
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = group
-
-	var respS Response
-	err := bot.Client.httpPost("/unmuteAll", postBody, &respS)
-	if err != nil {
-		return err
-	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
-	}
-	return nil
-}
-
-// Mute 禁言 second为0 解除禁言
-func (bot *Bot) Mute(group int64, member int64, second int64) error {
-	postBody := make(map[string]interface{})
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = group
-	postBody["memberId"] = member
-
-	var respS Response
-	var err error
-
-	if second == 0 {
-		err = bot.Client.httpPost("/unmute", postBody, &respS)
-	} else {
-		postBody["time"] = second
-		err = bot.Client.httpPost("/mute", postBody, &respS)
+func (b *Bot) call(method, endpoint string, params url.Values, body io.Reader, response interface{}) (e error) {
+	sb := strings.Builder{}
+	// (strings.Builder).WriteString never returns non nil error.
+	_, _ = sb.WriteString(b.addr)
+	_, _ = sb.WriteString(endpoint)
+	if params != nil {
+		_, _ = sb.WriteString("/")
+		_, _ = sb.WriteString(params.Encode())
 	}
 
-	if err != nil {
-		return err
+	req, e := http.NewRequest(method, sb.String(), body)
+	if e != nil {
+		return
 	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
+	req.Header.Add("Connection", "Keep-Alive")
+	if body != nil {
+		req.Header.Add("Content-Type", "application/json")
 	}
 
-	return nil
-}
+	resp, e := b.client.Do(req)
+	if e != nil {
+		return
+	}
+	e = json.NewDecoder(resp.Body).Decode(response)
+	resp.Body.Close()
 
-// Kick 踢出群聊
-func (bot *Bot) Kick(group int64, member int64, msg string) error {
-	postBody := make(map[string]interface{}, 4)
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = group
-	postBody["memberId"] = member
-	postBody["msg"] = msg
-	var respS Response
-	err := bot.Client.httpPost("/mute", postBody, &respS)
-	if err != nil {
-		return err
-	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
-	}
-	return nil
-}
-
-// SetGroupConfig 设置群设置
-func (bot *Bot) SetGroupConfig(config GroupConfig, group int64) error {
-	postBody := make(map[string]interface{}, 3)
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = group
-	postBody["config"] = config
-	var respS Response
-	err := bot.Client.httpPost("/groupConfig", postBody, &respS)
-	if err != nil {
-		return err
-	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
-	}
-	return nil
-}
-
-// GetGroupConfig 获取群设置
-func (bot *Bot) GetGroupConfig(group int64) (*GroupConfig, error) {
-	var respS *GroupConfig
-	err := bot.Client.httpGet("/groupConfig?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10), &respS)
-	if err != nil {
-		return nil, err
-	}
-	return respS, nil
-}
-
-// SetGroupMemberInfo 设置群成员信息
-func (bot *Bot) SetGroupMemberInfo(info *GroupMemberInfo, group, member int64) error {
-	postBody := make(map[string]interface{}, 3)
-	postBody["sessionKey"] = bot.Session
-	postBody["target"] = group
-	postBody["memberId"] = member
-	postBody["info"] = info
-	var respS Response
-	err := bot.Client.httpPost("/memberInfo", postBody, &respS)
-	if err != nil {
-		return err
-	}
-	if respS.Code != 0 {
-		return errors.New(respS.Msg)
-	}
-	return nil
-}
-
-// GetGroupMemberInfo 获取群成员信息
-func (bot *Bot) GetGroupMemberInfo(group, member int64) (*GroupMemberInfo, error) {
-	var respS *GroupMemberInfo
-	err := bot.Client.httpGet("/memberInfo?sessionKey="+bot.Session+"&target="+strconv.FormatInt(group, 10)+"&memberId="+strconv.FormatInt(member, 10), &respS)
-	if err != nil {
-		return nil, err
-	}
-	return respS, nil
+	return
 }
