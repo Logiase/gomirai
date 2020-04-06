@@ -14,7 +14,7 @@ import (
 	"github.com/Logiase/gomirai/api"
 )
 
-// Bot qq机器人
+// Bot qq机器人结构体
 type Bot struct {
 	addr, authKey, session string
 	qq                     int64
@@ -32,21 +32,21 @@ type Bot struct {
 	client http.Client
 }
 
-// NewBot :)
+// NewBot 新建一个以addr为api地址的Bot
 func NewBot(addr string) *Bot {
 	return &Bot{
 		addr: addr,
 	}
 }
 
-// NewBotWithClient :)
+// NewBotWithClient 新建一个以addr为api地址、以c为默认http.Client的Bot
 func NewBotWithClient(addr string, c http.Client) *Bot {
 	b := NewBot(addr)
 	b.client = c
 	return b
 }
 
-// Auth :)
+// Auth 验证一个authKey，验证成功时将Bot的session设置为api的对应返回值
 func (b *Bot) Auth(authKey string) (f bool, e error) {
 	defer func() {
 		if p := recover(); p != nil {
@@ -65,7 +65,8 @@ func (b *Bot) Auth(authKey string) (f bool, e error) {
 	return
 }
 
-// Verify :)
+// Verify 校验并激活你的Session，同时将该Session与一个已登陆的Bot绑定
+// 参数qq为希望绑定的Bot的QQ号
 func (b *Bot) Verify(qq int64) (f bool, e error) {
 	i := make(map[string]interface{})
 	payload := `{"sessionKey": "` + b.session + `", "qq": ` + strconv.FormatInt(qq, 10) + `}`
@@ -79,7 +80,22 @@ func (b *Bot) Verify(qq int64) (f bool, e error) {
 	return
 }
 
-// SendFriendMessage :)
+// Release 释放一个session及其相关的资源，
+// 不使用的session应当被释放，否则将导致backend的内存泄漏
+func (b *Bot) Release(qq int64) (f bool, e error) {
+	i := make(map[string]interface{})
+	payload := `{"sessionKey": "` + b.session + `", "qq": ` + strconv.FormatInt(qq, 10) + `}`
+	e = b.call("POST", "/release", nil, bytes.NewReader([]byte(payload)), &i)
+	if e != nil {
+		return
+	}
+	if f, e = checkUniformCodeResp(i); f {
+		b.qq = 0
+	}
+	return
+}
+
+// SendFriendMessage 向指定好友发送消息
 func (b *Bot) SendFriendMessage(msg api.MessageCall) (resp *api.Response, e error) {
 	resp = &api.Response{}
 	buf := bytes.NewBuffer([]byte{})
@@ -90,7 +106,7 @@ func (b *Bot) SendFriendMessage(msg api.MessageCall) (resp *api.Response, e erro
 	return
 }
 
-// SendGroupMessage :)
+// SendGroupMessage 向指定群发送消息
 func (b *Bot) SendGroupMessage(msg api.MessageCall) (resp *api.Response, e error) {
 	resp = &api.Response{}
 	buf := bytes.NewBuffer([]byte{})
@@ -101,7 +117,7 @@ func (b *Bot) SendGroupMessage(msg api.MessageCall) (resp *api.Response, e error
 	return
 }
 
-// SendImageMessage :)
+// SendImageMessage 通过URL发送图片消息
 func (b *Bot) SendImageMessage(msg api.MessageCall) (resp []string, e error) {
 	resp = make([]string, 0)
 	buf := bytes.NewBuffer([]byte{})
@@ -115,7 +131,9 @@ func (b *Bot) SendImageMessage(msg api.MessageCall) (resp []string, e error) {
 // TODO: multipart/form-data
 // func (b *Bot) UploadImage() {}
 
-// Recall :)
+// Recall 撤回指定消息
+// 对于自己发送的消息，有2分钟的时间限制
+// 对于群聊中的群员消息，需要有相应的权限
 func (b *Bot) Recall(msg api.MessageCall) (f bool, e error) {
 	buf := bytes.NewBuffer([]byte{})
 	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
@@ -126,7 +144,7 @@ func (b *Bot) Recall(msg api.MessageCall) (f bool, e error) {
 	return checkUniformCodeResp(resp)
 }
 
-// FetchMessage :)
+// FetchMessage 获取Bot接收到的消息和各类事件
 func (b *Bot) FetchMessage(count int) (resp []api.Event, e error) {
 	resp = make([]api.Event, 0, count)
 	e = b.call("GET", "/fetchMessage", url.Values{
@@ -136,7 +154,7 @@ func (b *Bot) FetchMessage(count int) (resp []api.Event, e error) {
 	return
 }
 
-// MessageFromID :)
+// MessageFromID 获取Bot接收到的、被缓存的消息和各类事件
 func (b *Bot) MessageFromID(id int64) (resp api.Event, e error) {
 	e = b.call("GET", "/messageFromId", url.Values{
 		"sessionKey": []string{b.session},
@@ -145,7 +163,7 @@ func (b *Bot) MessageFromID(id int64) (resp api.Event, e error) {
 	return
 }
 
-// RefreshFriendList :)
+// RefreshFriendList 刷新Bot的好友列表
 func (b *Bot) RefreshFriendList() (list []api.Friend, e error) {
 	list = make([]api.Friend, 0)
 	e = b.call("GET", "/friendList", url.Values{
@@ -160,13 +178,14 @@ func (b *Bot) RefreshFriendList() (list []api.Friend, e error) {
 
 // FriendList 获取缓存的好友列表
 func (b *Bot) FriendList() (list []api.Friend, e error) {
+	// POTENTIAL RACE?
 	if !b.flagFriend {
 		return b.RefreshFriendList()
 	}
 	return b.friendList, nil
 }
 
-// RefreshGroupList :)
+// RefreshGroupList 刷新Bot的群列表
 func (b *Bot) RefreshGroupList() (list []api.Group, e error) {
 	list = make([]api.Group, 0)
 	e = b.call("GET", "/groupList", url.Values{
@@ -187,7 +206,7 @@ func (b *Bot) GroupList() (list []api.Group, e error) {
 	return b.groupList, nil
 }
 
-// MemberList :)
+// MemberList 获取指定群中的成员列表
 func (b *Bot) MemberList(target int64) (list []api.GroupMember, e error) {
 	list = make([]api.GroupMember, 0)
 	e = b.call("GET", "/memberList", url.Values{
@@ -197,7 +216,7 @@ func (b *Bot) MemberList(target int64) (list []api.GroupMember, e error) {
 	return
 }
 
-// MuteAll :)
+// MuteAll 对指定群进行全体禁言（需要有相关权限）
 func (b *Bot) MuteAll(target int64) (f bool, e error) {
 	sb := strings.Builder{}
 	_, _ = sb.WriteString(`{"sessionKey": "`)
@@ -211,7 +230,7 @@ func (b *Bot) MuteAll(target int64) (f bool, e error) {
 	return checkUniformCodeResp(resp)
 }
 
-// UnmuteAll :)
+// UnmuteAll 对指定群解除全体禁言（需要有相关权限）
 func (b *Bot) UnmuteAll(target int64) (f bool, e error) {
 	sb := strings.Builder{}
 	_, _ = sb.WriteString(`{"sessionKey": "`)
@@ -225,17 +244,17 @@ func (b *Bot) UnmuteAll(target int64) (f bool, e error) {
 	return checkUniformCodeResp(resp)
 }
 
-// Mute :)
+// Mute 对指定群中的指定群员进行禁言（需要有相关权限）
 func (b *Bot) Mute(msg api.ManageCall) (bool, error) {
 	return b.manageCall("/mute", msg)
 }
 
-// Unmute :)
+// Unmute 对指定群中的指定群员解除禁言（需要有相关权限）
 func (b *Bot) Unmute(msg api.ManageCall) (bool, error) {
 	return b.manageCall("/unmute", msg)
 }
 
-// Kick :)
+// Kick 将指定群中的指定群员踢出（需要有相关权限）
 func (b *Bot) Kick(msg api.ManageCall) (bool, error) {
 	return b.manageCall("/kick", msg)
 }
@@ -250,7 +269,7 @@ func (b *Bot) manageCall(endpoint string, msg api.ManageCall) (f bool, e error) 
 	return checkUniformCodeResp(resp)
 }
 
-// GroupConfig :)
+// GroupConfig 修改群设置（需要有相关权限）
 func (b *Bot) GroupConfig(msg api.ConfigCall) (f bool, e error) {
 	buf := bytes.NewBuffer([]byte{})
 	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
@@ -261,7 +280,7 @@ func (b *Bot) GroupConfig(msg api.ConfigCall) (f bool, e error) {
 	return checkUniformCodeResp(resp)
 }
 
-// GetGroupConfig :)
+// GetGroupConfig 获取群设置
 func (b *Bot) GetGroupConfig(target int64) (resp api.GroupConfig, e error) {
 	e = b.call("GET", "/groupConfig", url.Values{
 		"sessionKey": []string{b.session},
@@ -270,7 +289,7 @@ func (b *Bot) GetGroupConfig(target int64) (resp api.GroupConfig, e error) {
 	return
 }
 
-// MemberInfo :)
+// MemberInfo 修改群员资料（需要有相关权限）
 func (b *Bot) MemberInfo(msg api.ConfigCall) (f bool, e error) {
 	buf := bytes.NewBuffer([]byte{})
 	if e = json.NewEncoder(buf).Encode(&msg); e != nil {
@@ -281,7 +300,7 @@ func (b *Bot) MemberInfo(msg api.ConfigCall) (f bool, e error) {
 	return checkUniformCodeResp(resp)
 }
 
-// GetMemberInfo :)
+// GetMemberInfo 获取群员资料
 func (b *Bot) GetMemberInfo(target int64) (resp api.GroupConfig, e error) {
 	e = b.call("GET", "/memberInfo", url.Values{
 		"sessionKey": []string{b.session},
@@ -290,12 +309,12 @@ func (b *Bot) GetMemberInfo(target int64) (resp api.GroupConfig, e error) {
 	return
 }
 
-// QQ :)
+// QQ 返回Bot对应的QQ号
 func (b *Bot) QQ() int64 {
 	return b.qq
 }
 
-// Session :)
+// Session 返回Bot对应的session
 func (b *Bot) Session() string {
 	return b.session
 }
