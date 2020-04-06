@@ -318,7 +318,7 @@ func (b *Bot) call(method, endpoint string, params url.Values, body io.Reader, r
 	_, _ = sb.WriteString(b.addr)
 	_, _ = sb.WriteString(endpoint)
 	if params != nil {
-		_, _ = sb.WriteString("/")
+		_, _ = sb.WriteString("?")
 		_, _ = sb.WriteString(params.Encode())
 	}
 
