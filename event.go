@@ -6,6 +6,13 @@ import (
 	"reflect"
 )
 
+// InEvent http-api新返回格式
+type InEventAll struct {
+	Code         int64     `json:"code"`
+	ErrorMessage string    `json:"errorMessage,omitempty"`
+	Data         []InEvent `json:"data,omitempty"`
+}
+
 // InEvent 获取到的事件
 type InEvent struct {
 	Type string `json:"type"`
