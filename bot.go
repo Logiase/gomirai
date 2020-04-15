@@ -143,7 +143,7 @@ func (bot *Bot) InitChannel(size int, t time.Duration) {
 // FetchMessage 获取消息，会阻塞当前线程，消息保存在bot中的MessageChan
 // 使用前请使用InitChannel初始化Channel
 func (bot *Bot) FetchMessage() error {
-	var respS []InEvent
+	var respS InEventAll
 	t := time.NewTicker(bot.fetchTime)
 	for {
 		err := bot.Client.httpGet("/fetchMessage?sessionKey="+bot.Session+"&count="+strconv.Itoa(bot.chanCache), &respS)
@@ -151,7 +151,7 @@ func (bot *Bot) FetchMessage() error {
 			return err
 		}
 
-		for _, e := range respS {
+		for _, e := range respS.Data {
 			if len(bot.MessageChan) == bot.chanCache {
 				<-bot.MessageChan
 			}
