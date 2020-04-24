@@ -16,13 +16,14 @@ type InEventAll struct {
 // InEvent 获取到的事件
 type InEvent struct {
 	Type string `json:"type"`
-	QQ   int64  `json:"qq,omitempty"`
+	// QQ   int64  `json:"qq,omitempty"`
 
 	// Event
-	AuthorID        int64       `json:"authorId,omitempty"`
-	MessageID       int64       `json:"messageId,omitempty"`
-	Time            int64       `json:"time,omitempty"`
-	Group           Group       `json:"group,omitempty"`
+	// AuthorID        int64       `json:"authorId,omitempty"`
+	// MessageID       int64       `json:"messageId,omitempty"`
+	ID int64 `json:"id,omitempty"`
+	// Time            int64       `json:"time,omitempty"`
+	// Group           Group       `json:"group,omitempty"`
 	Origin          interface{} `json:"origin,omitempty"`
 	Current         interface{} `json:"current,omitempty"`
 	DurationSeconds int64       `json:"durationSeconds,omitempty"`
@@ -32,7 +33,8 @@ type InEvent struct {
 	//Message
 	MessageChain []Message `json:"messageChain,omitempty"`
 
-	Sender       interface{} `json:"sender,omitempty"`
+	// Sender       interface{} `json:"sender,omitempty"`
+	Sender       Sender      `json:"sender,omitempty"`
 	SenderGroup  GroupMember `json:"-"`
 	SenderFriend Friend      `json:"-"`
 
