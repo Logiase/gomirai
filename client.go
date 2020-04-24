@@ -89,7 +89,7 @@ func (client *Client) httpPost(path string, postBody interface{}, respS interfac
 	if err != nil {
 		return err
 	}
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json;charset=UTF-8") // 设置utf8, 否则中文乱码
 	req.Header.Add("Connection", "Keep-Alive")
 	resp, err := client.HTTPClient.Do(req)
 	if err != nil {
