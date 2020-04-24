@@ -1,4 +1,4 @@
-module github.com/Logiase/gomirai
+module github.com/blackBatty/gomirai
 
 go 1.14
 
