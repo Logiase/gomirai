@@ -74,7 +74,7 @@ func (e *InEvent) SenderDetail() error {
 					return err
 				}
 				return nil
-			} else if k.String() == "nickName" {
+			} else if k.String() == "nickname" {
 				bytesData, err := json.Marshal(e.Sender)
 				if err != nil {
 					return err
