@@ -89,7 +89,7 @@ func (client *Client) httpPost(path string, postBody interface{}, respS interfac
 	if err != nil {
 		return err
 	}
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json; charset=utf-8")
 	req.Header.Add("Connection", "Keep-Alive")
 	resp, err := client.HTTPClient.Do(req)
 	if err != nil {
@@ -152,7 +152,7 @@ func (client *Client) SendCommand(commandName string, args []string) string {
 	postBody["name"] = commandName
 	postBody["args"] = args
 	bytesData, _ := json.Marshal(postBody)
-	resp, err := client.HTTPClient.Post("/command/send", "application/json", bytes.NewReader(bytesData))
+	resp, err := client.HTTPClient.Post("/command/send", "application/json; charset=utf-8", bytes.NewReader(bytesData))
 	if err != nil {
 		return err.Error()
 	}
