@@ -107,7 +107,7 @@ func (bot *Bot) SendImageMessage(target int64, targetType string, urls []string)
 	postBody["urls"] = urls
 
 	var respS []string
-	err := bot.Client.httpPost("/sendGroupMessage", postBody, &respS)
+	err := bot.Client.httpPost("/sendImageMessage", postBody, &respS)
 	if err != nil {
 		return nil, err
 	}
