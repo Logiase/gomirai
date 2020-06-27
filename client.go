@@ -3,6 +3,7 @@ package gomirai
 import (
 	"errors"
 	"strconv"
+	"time"
 
 	"gopkg.in/h2non/gentleman.v2"
 	"gopkg.in/h2non/gentleman.v2/plugins/body"
@@ -18,7 +19,7 @@ type Client struct {
 	AuthKey string
 
 	HttpClient *gentleman.Client
-	Bots       map[int64]*Bot
+	Bots       map[uint]*Bot
 
 	Logger *logrus.Entry
 }
@@ -31,7 +32,7 @@ func NewClient(name, url, authKey string) *Client {
 	return &Client{
 		AuthKey:    authKey,
 		HttpClient: c,
-		Bots:       make(map[int64]*Bot),
+		Bots:       make(map[uint]*Bot),
 		Logger: logrus.New().WithFields(logrus.Fields{
 			"client": name,
 		}),
@@ -48,18 +49,19 @@ func (c *Client) Auth() (string, error) {
 	return tools.Json.Get([]byte(res), "session").ToString(), nil
 }
 
-func (c *Client) Verify(qq int64, sessionKey string) (*Bot, error) {
+func (c *Client) Verify(qq uint, sessionKey string) (*Bot, error) {
 	data := map[string]interface{}{"sessionKey": sessionKey, "qq": qq}
 	_, err := c.doPost("/verify", data)
 	if err != nil {
 		return nil, err
 	}
 	c.Bots[qq] = &Bot{QQ: qq, SessionKey: sessionKey, Client: c, Logger: c.Logger.WithField("qq", qq)}
+	c.Bots[qq].SetChannel(time.Second, 10)
 	c.Logger.Info("Verified")
 	return c.Bots[qq], nil
 }
 
-func (c *Client) Release(qq int64) error {
+func (c *Client) Release(qq uint) error {
 	data := map[string]interface{}{"sessionKey": c.Bots[qq].SessionKey, "qq": qq}
 	_, err := c.doPost("release", data)
 	if err != nil {
@@ -71,10 +73,31 @@ func (c *Client) Release(qq int64) error {
 }
 
 func (c *Client) doPost(path string, data interface{}) (string, error) {
-	c.Logger.Trace("Post to:"+path+" Data:", data)
-	res, err := c.HttpClient.Request().Path(path).Method("POST").Use(body.JSON(data)).Send()
+	c.Logger.Trace("POST:"+path+" Data:", data)
+	res, err := c.HttpClient.Request().
+		Path(path).
+		Method("POST").
+		Use(body.JSON(data)).
+		Send()
 	if err != nil {
-		c.Logger.Warn("Post Failed")
+		c.Logger.Warn("POST Failed")
+		return "", err
+	}
+	c.Logger.Trace("result StatusCode:", res.StatusCode)
+	if !res.Ok {
+		return res.String(), errors.New("Http: " + strconv.Itoa(res.StatusCode))
+	}
+	if tools.Json.Get([]byte(res.String()), "code").ToInt() != 0 {
+		return res.String(), getErrByCode(tools.Json.Get([]byte(res.String()), "code").ToUint())
+	}
+	return res.String(), nil
+}
+
+func (c *Client) doGet(path string, params map[string]string) (string, error) {
+	c.Logger.Trace("GET:" + path)
+	res, err := c.HttpClient.Request().Path(path).SetQueryParams(params).Method("GET").Send()
+	if err != nil {
+		c.Logger.Warn("GET Failed")
 		return "", err
 	}
 	c.Logger.Trace("result StatusCode:", res.StatusCode)
