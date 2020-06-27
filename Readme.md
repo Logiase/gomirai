@@ -2,7 +2,7 @@
 
 [![Go Report](https://goreportcard.com/badge/github.com/Logiase/gomirai?style=flat-square)](https://goreportcard.com/report/github.com/Logiase/gomirai)![GitHub top language](https://img.shields.io/github/languages/top/Logiase/gomirai)![GitHub](https://img.shields.io/github/license/Logiase/gomirai)![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/Logiase/gomirai)![GitHub contributors](https://img.shields.io/github/contributors/Logiase/gomirai)
 
-适配[MiraiHttpApi](https://github.com/mamoe/mirai-api-http)与[Mirai](https://github.com/mamoe/mirai)的Go SDK
+适配[MiraiHttpApi](https://github.com/project-mirai/mirai-api-http)与[Mirai](https://github.com/mamoe/mirai)的Go SDK
 
 目前仍处于开发阶段,部分功能仍未测试，暂未发布Go Module
 
