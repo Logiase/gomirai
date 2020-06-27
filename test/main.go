@@ -7,8 +7,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/logiase/gomirai"
-	"github.com/logiase/gomirai/message"
+	"github.com/Logiase/gomirai"
+	"github.com/Logiase/gomirai/message"
 )
 
 func main() {

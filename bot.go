@@ -6,8 +6,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/logiase/gomirai/message"
-	"github.com/logiase/gomirai/tools"
+	"github.com/Logiase/gomirai/message"
+	"github.com/Logiase/gomirai/tools"
 )
 
 type Bot struct {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/logiase/gomirai/tools"
+	"github.com/Logiase/gomirai/tools"
 )
 
 // Client 与Mirai进行沟通
