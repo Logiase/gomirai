@@ -1,8 +1,11 @@
-module github.com/Logiase/gomirai
+module github.com/logiase/gomirai
 
 go 1.14
 
 require (
-	github.com/sirupsen/logrus v1.5.0
-	github.com/stretchr/testify v1.5.1 // indirect
+	github.com/json-iterator/go v1.1.10
+	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect
+	github.com/sirupsen/logrus v1.6.0
+	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
+	gopkg.in/h2non/gentleman.v2 v2.0.4
 )
