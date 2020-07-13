@@ -77,6 +77,7 @@ func (c *Client) doPost(path string, data interface{}) (string, error) {
 	res, err := c.HttpClient.Request().
 		Path(path).
 		Method("POST").
+		AddHeader("charset", "utf8").
 		Use(body.JSON(data)).
 		Send()
 	if err != nil {
@@ -95,7 +96,12 @@ func (c *Client) doPost(path string, data interface{}) (string, error) {
 
 func (c *Client) doGet(path string, params map[string]string) (string, error) {
 	c.Logger.Trace("GET:" + path)
-	res, err := c.HttpClient.Request().Path(path).SetQueryParams(params).Method("GET").Send()
+	res, err := c.HttpClient.Request().
+		Path(path).
+		SetQueryParams(params).
+		AddHeader("charset", "utf8").
+		Method("GET").
+		Send()
 	if err != nil {
 		c.Logger.Warn("GET Failed")
 		return "", err
