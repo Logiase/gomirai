@@ -80,3 +80,20 @@ func (b *Bot) FetchMessages() error {
 		<-t.C
 	}
 }
+
+// RespondMemberJoinRequest 响应用户加群请求
+// operate	说明
+// 0	同意入群
+// 1	拒绝入群
+// 2	忽略请求
+// 3	拒绝入群并添加黑名单，不再接收该用户的入群申请
+// 4	忽略入群并添加黑名单，不再接收该用户的入群申请
+func (b *Bot) RespondMemberJoinRequest(eventID, fromID, groupID int64, operate int, message string) error {
+	data := map[string]interface{}{"sessionKey": b.SessionKey, "eventId": eventID, "fromId": fromID, "groupId": groupID, "operate": operate, "message": message}
+	_, err := b.Client.doPost("/resp/memberJoinRequestEvent", data)
+	if err != nil {
+		return err
+	}
+	b.Logger.Info("Respond Member Join Request ", fromID, " join ", groupID, " operate: ", operate)
+	return nil
+}
