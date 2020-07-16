@@ -77,7 +77,7 @@ func (c *Client) doPost(path string, data interface{}) (string, error) {
 	res, err := c.HttpClient.Request().
 		Path(path).
 		Method("POST").
-		AddHeader("charset", "utf8").
+		SetHeader("Content-Type", "application/json;charset=utf-8").
 		Use(body.JSON(data)).
 		Send()
 	if err != nil {
@@ -99,7 +99,7 @@ func (c *Client) doGet(path string, params map[string]string) (string, error) {
 	res, err := c.HttpClient.Request().
 		Path(path).
 		SetQueryParams(params).
-		AddHeader("charset", "utf8").
+		SetHeader("Content-Type", "application/json;charset=utf-8").
 		Method("GET").
 		Send()
 	if err != nil {
