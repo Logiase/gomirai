@@ -1,6 +1,7 @@
 package gomirai
 
 import (
+	"os"
 	"strconv"
 	"time"
 
@@ -96,4 +97,20 @@ func (b *Bot) RespondMemberJoinRequest(eventID, fromID, groupID int64, operate i
 	}
 	b.Logger.Info("Respond Member Join Request ", fromID, " join ", groupID, " operate: ", operate)
 	return nil
+}
+
+func (b *Bot) UploadImage(t string, imgFilepath string) (string, error) {
+	imgReader, err := os.Open(imgFilepath)
+	if err != nil {
+		return "", err
+	}
+	defer imgReader.Close()
+
+	data := map[string]interface{}{"sessionKey": b.SessionKey, "type": t, "img": imgReader}
+	res, err := b.Client.doPostWithFormData("/uploadImage", data)
+	if err != nil {
+		return "", err
+	}
+	b.Logger.Info("UploadFriendImage ", imgFilepath)
+	return tools.Json.Get([]byte(res), "imageId").ToString(), nil
 }
