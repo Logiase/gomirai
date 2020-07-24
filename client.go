@@ -2,10 +2,11 @@ package gomirai
 
 import (
 	"errors"
-	"gopkg.in/h2non/gentleman.v2/plugins/multipart"
 	"io"
 	"strconv"
 	"time"
+
+	"gopkg.in/h2non/gentleman.v2/plugins/multipart"
 
 	"gopkg.in/h2non/gentleman.v2"
 	"gopkg.in/h2non/gentleman.v2/plugins/body"
@@ -39,6 +40,14 @@ func NewClient(name, url, authKey string) *Client {
 			"client": name,
 		}),
 	}
+}
+
+func (c *Client) About() (string, error) {
+	res, err := c.doGet("/about", nil)
+	if err != nil {
+		return "", err
+	}
+	return tools.Json.Get([]byte(res), "data").Get("version").ToString(), nil
 }
 
 func (c *Client) Auth() (string, error) {
