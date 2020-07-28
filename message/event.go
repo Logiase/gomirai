@@ -51,11 +51,29 @@ type Group struct {
 	Permisson string `json:"permisson,omitempty"` //bot在群中的角色
 }
 
+type Friend struct {
+	Id       uint   `json:"id,omitempty"`         //QQ
+	NickName string `json:"memberName,omitempty"` //昵称
+	Remark   string `json:"remark,omitempty"`     //备注
+}
+
 type Sender struct {
-	Id         uint   `json:"id,omitempty"`         //发送者QQ号
-	NickName   string `json:"memberName,omitempty"` //(FriendMessage)发送者昵称
-	Remark     string `json:"remark,omitempty"`     //(FriendMessage)发送者备注
+	Friend
 	MemberName string `json:"memberName,omitempty"` //(GroupMessage)发送者群昵称
 	Permission string `json:"permission,omitempty"` //(GroupMessage)发送者在群中的角色
 	Group      Group  `json:"group,omitempty"`      //(GroupMessage)消息来源群信息
+}
+
+type GroupConfig struct {
+	Name              string
+	Announcement      string
+	ConfessTalk       bool
+	AllowMemberInvite bool
+	AutoApprove       bool
+	AnonymousChat     bool
+}
+
+type MemberInfo struct {
+	Name         string
+	SpecialTitle string
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Logiase/gomirai"
+	"github.com/Logiase/gomirai/bot"
 	"github.com/Logiase/gomirai/message"
 )
 
@@ -17,7 +17,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	c := gomirai.NewClient("default", "http://127.0.0.1:8001", "12345678")
+	c := bot.NewClient("default", "http://124.70.68.221:8001", "12345678")
 	c.Logger.Level = logrus.TraceLevel
 	key, err := c.Auth()
 	if err != nil {
@@ -41,7 +41,7 @@ func main() {
 		case e := <-b.Chan:
 			switch e.Type {
 			case message.EventReceiveGroupMessage:
-				_, err = b.SendGroupMessage(e.Sender.Group.Id, 0, message.PlainMessage("Test"))
+				_, err = b.SendGroupMessage(e.Sender.Group.Id, 0, message.PlainMessage("中文消息"))
 				if err != nil {
 					fmt.Println(err)
 				}

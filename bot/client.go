@@ -1,4 +1,4 @@
-package gomirai
+package bot
 
 import (
 	"errors"
@@ -42,6 +42,9 @@ func NewClient(name, url, authKey string) *Client {
 	}
 }
 
+// --- API-HTTP插件相关 ---
+
+// About 使用此方法获取插件的信息，如版本号
 func (c *Client) About() (string, error) {
 	res, err := c.doGet("/about", nil)
 	if err != nil {
@@ -50,6 +53,9 @@ func (c *Client) About() (string, error) {
 	return tools.Json.Get([]byte(res), "data").Get("version").ToString(), nil
 }
 
+// --- 认证相关 ---
+
+// Auth 使用此方法验证你的身份，并返回一个会话
 func (c *Client) Auth() (string, error) {
 	data := map[string]string{"authKey": c.AuthKey}
 	res, err := c.doPost("/auth", data)
@@ -60,6 +66,7 @@ func (c *Client) Auth() (string, error) {
 	return tools.Json.Get([]byte(res), "session").ToString(), nil
 }
 
+// Verify 使用此方法校验并激活你的Session，同时将Session与一个已登录的Bot绑定
 func (c *Client) Verify(qq uint, sessionKey string) (*Bot, error) {
 	data := map[string]interface{}{"sessionKey": sessionKey, "qq": qq}
 	_, err := c.doPost("/verify", data)
@@ -72,6 +79,8 @@ func (c *Client) Verify(qq uint, sessionKey string) (*Bot, error) {
 	return c.Bots[qq], nil
 }
 
+// Release 使用此方式释放session及其相关资源（Bot不会被释放）
+// 不使用的Session应当被释放，长时间（30分钟）未使用的Session将自动释放，否则Session持续保存Bot收到的消息，将会导致内存泄露(开启websocket后将不会自动释放)
 func (c *Client) Release(qq uint) error {
 	data := map[string]interface{}{"sessionKey": c.Bots[qq].SessionKey, "qq": qq}
 	_, err := c.doPost("release", data)
@@ -82,6 +91,8 @@ func (c *Client) Release(qq uint) error {
 	c.Logger.Info("Released")
 	return nil
 }
+
+// --- internal ---
 
 func (c *Client) doPost(path string, data interface{}) (string, error) {
 	c.Logger.Trace("POST:"+path+" Data:", data)
