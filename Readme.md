@@ -4,7 +4,11 @@
 
 适配[MiraiHttpApi](https://github.com/project-mirai/mirai-api-http)的Go SDK
 
-目前仍处于开发阶段,部分功能仍未测试
+已完成所有基本功能
+
+## 目前工作
+
+为使用者提供更加方便的事件处理函数
 
 ## 如何使用
 
@@ -12,29 +16,15 @@
 
 所有导出函数、变量、结构均有详细注释
 
-```go
-
-package main
-
-import (
-    "github.com/Logiase/gomirai"
-)
-
-func main() {
-    //...
-}
-    
-```
-
 ### 不了解Go？
 
 (安利狂魔) [Go急速入门](https://learn.go.dev/)
 
 ### 目前问题
 
-未实现Http api所有功能
+暂无
 
-## 计划
+## 仍未实现
 
  - websocket
  - 上报
