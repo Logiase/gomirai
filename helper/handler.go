@@ -1,11 +1,10 @@
 package helper
 
 import (
-	"github.com/Logiase/gomirai/bot"
 	"github.com/Logiase/gomirai/message"
 )
 
 type EventHandler struct {
-	privateMessageHandlers []func(bot *bot.Bot, chain message.Chain, sender message.Sender)
-	groupMessageHandlers   []func(bt *bot.Bot, chain message.Chain, sender message.Sender)
+	privateMessageHandlers []func(bot interface{}, chain message.Chain, sender message.Sender)
+	groupMessageHandlers   []func(bot interface{}, chain message.Chain, sender message.Sender)
 }
