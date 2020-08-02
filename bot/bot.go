@@ -8,7 +8,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Logiase/gomirai/helper"
 	"github.com/Logiase/gomirai/message"
 	"github.com/Logiase/gomirai/tools"
 )
@@ -30,8 +29,6 @@ type Bot struct {
 
 	Friends []message.Friend
 	Groups  []message.Group
-
-	handlers helper.EventHandler
 }
 
 // --- Bot 设置 ---
@@ -304,14 +301,14 @@ func (b *Bot) RespondMemberJoinRequest(eventID, fromID, groupID int64, operate i
 
 // UseHandler 使用选定的 EventHandler 进行事件响应
 // 未实装
-func (b *Bot) UseHandler(handler helper.EventHandler) {
-	b.handlers = handler
-}
+//func (b *Bot) UseHandler(handler helper.EventHandler) {
+//	b.handlers = handler
+//}
 
 // Run 使用 eventHandler 进行事件相应
 // 与使用 FetchMessage 方法有所冲突
 // 未实装
-func (b *Bot) Run() {
+func (b *Bot) run() {
 	go func() {
 		err := b.FetchMessages()
 		if err != nil {
