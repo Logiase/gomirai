@@ -1,4 +1,6 @@
-module github.com/Logiase/gomirai
+//module github.com/Logiase/gomirai/v1
+
+module gopkg.in/Logiase/gomirai/v1
 
 go 1.14
 
