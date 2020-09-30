@@ -1,3 +1,9 @@
+# 建议使用 [MiraiGo-Template](https://github.com/Logiase/MiraiGo-Template)
+
+目前gomirai已经有段时间没有维护，并且Mirai-Api-Http也在重构中，可能有不兼容的情况
+
+建议使用基于[Mirai](https://github.com/mamoe/mirai)与[MiraiGo](https://github.com/Mrs4s/MiraiGo)的便于开发的[MiraiGo-Template](https://github.com/Logiase/MiraiGo-Template)
+
 # Go-Mirai
 
 [![Go Report](https://goreportcard.com/badge/github.com/Logiase/gomirai?style=flat-square)](https://goreportcard.com/report/github.com/Logiase/gomirai)![GitHub top language](https://img.shields.io/github/languages/top/Logiase/gomirai)![GitHub](https://img.shields.io/github/license/Logiase/gomirai)![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/Logiase/gomirai)![GitHub contributors](https://img.shields.io/github/contributors/Logiase/gomirai)
